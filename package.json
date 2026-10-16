@@ -1,6 +1,6 @@
 {
   "name": "hvac-cards",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Home Assistant dashboard cards for the house HVAC system: a full SCADA-style schematic and compact summary cards.",
   "private": true,
   "type": "module",
