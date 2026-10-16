@@ -1,0 +1,25 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local environment
+.env
+.env.*
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# AI assistant config tailored to the local dev environment
+CLAUDE.md
+CLAUDE.local.md
+.claude/
