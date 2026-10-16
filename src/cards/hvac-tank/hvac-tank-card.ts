@@ -9,8 +9,6 @@ import { sharedStyles } from '../../shared/styles';
 import { type TankProbeView, tankDiagram, tankDiagramStyles } from '../../shared/widgets/tank-diagram';
 
 export interface HvacTankCardConfig extends LovelaceCardConfig, HvacSystemConfig {
-  /** Optional heading; the card has none unless this is set. */
-  name?: string;
   show_energy?: boolean;
   /** Where a tap on the card leads; normally the dedicated HVAC dashboard. */
   navigation_path?: string;
@@ -34,12 +32,6 @@ export class HvacTankCard extends LitElement implements LovelaceCard {
       ha-card {
         padding: 16px;
         cursor: pointer;
-      }
-      .name {
-        margin-bottom: 4px;
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--primary-text-color);
       }
       .grid {
         display: grid;
@@ -125,7 +117,6 @@ export class HvacTankCard extends LitElement implements LovelaceCard {
 
     return html`
       <ha-card @click=${this.navigate}>
-        ${config.name ? html`<div class="name">${config.name}</div>` : ''}
         ${tankDiagram({ tank, probes, sources, loads, unit }, (entityId) => this.moreInfo(entityId))}
         <div class="grid">
           <div class="metric">

@@ -23,7 +23,6 @@ Entity IDs default to `<domain>.<prefix>_<point>` (e.g. `sensor.hvac_tank_top_te
 
 ```yaml
 type: custom:hvac-tank-card
-name: Buffer tank                  # optional heading; omit for none
 prefix: hvac
 navigation_path: /dashboard-hvac
 show_energy: true
