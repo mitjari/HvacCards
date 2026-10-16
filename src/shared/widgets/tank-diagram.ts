@@ -47,8 +47,9 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
 
   const n = view.sources.length;
   if (n) {
-    const spacing = n > 1 ? Math.min(80, (G.TH - 50) / (n - 1)) : 0;
-    const first = n > 1 ? G.TY + 46 : inletY;
+    // The first source lines up with the inlet so its pipe runs straight into the tank; the rest stack below it.
+    const first = Math.max(22, inletY);
+    const spacing = n > 1 ? Math.min(80, Math.max(48, (G.TY + G.TH - 22 - first) / (n - 1))) : 0;
     view.sources.forEach((device, i) => {
       const y = first + i * spacing;
       legs.push({ device, route: `M${G.LX + G.CW},${y} H${G.MX} V${inletY} H${G.TX}`, chipY: y, side: 'l', at: tank.inlet_position });
