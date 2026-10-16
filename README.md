@@ -6,9 +6,9 @@ One bundle (`hvac-cards.js`) provides every card:
 | Card | Type | Purpose |
 |------|------|---------|
 | HVAC Schematic | `custom:hvac-schematic-card` | Full SCADA-style schematic for a dedicated dashboard with a `panel` view. |
-| HVAC Summary | `custom:hvac-summary-card` | Compact status tile for the main dashboard; tap opens the full schematic. |
+| HVAC Buffer Tank | `custom:hvac-tank-card` | Stratified buffer tank with heat sources, loads and flow animation for the main dashboard; tap opens the full schematic. |
 
-Both cards are placeholders for now and will be filled in from the design handoff and mockup.
+The schematic card is still a placeholder.
 
 ## Installation (HACS)
 
@@ -22,20 +22,38 @@ Every card accepts the same system configuration.
 Entity IDs default to `<domain>.<prefix>_<point>` (e.g. `sensor.hvac_tank_top_temperature`), and any of them can be overridden:
 
 ```yaml
-type: custom:hvac-summary-card
-title: HVAC
+type: custom:hvac-tank-card
+name: Buffer tank
 prefix: hvac
 navigation_path: /dashboard-hvac
+show_energy: true
 entities:
-  oil_heater: switch.boiler_oil_heater
+  oil_boiler_running: binary_sensor.burner_running
+tank:
+  volume: 1000
+  min_temp: 20
+  max_temp: 80
+  reference_temp: 20               # zero point for stored heat; defaults to min_temp
+  inlet_position: 0.19             # 0 = top, 1 = bottom
+  probe_positions: [0.07, 0.19, 0.56, 0.93]   # T1..T4, top to bottom
 ```
 
-The list of points lives in `src/shared/model/system.ts`.
+The list of points, the tank probes and the heat sources and loads live in `src/shared/model/system.ts`.
+Device power sensors may report W or kW; the card does not derive power from flow and ΔT, so publish a power sensor from Home Assistant if a device only has those.
+
+### Buffer tank card
+
+- The tank fill interpolates between the probes; the colour ramp is fixed (not themed) because it encodes temperature.
+- Pipes animate while their device runs, faster for more power, and take the tank colour where they connect; idle pipes are grey.
+- Net power sums running sources minus running loads; if any running device has no power figure the value shows an em dash.
+- Stored heat weights each probe by the slice of tank around it, so measure the real probe heights before trusting the number.
+- The generation inlet and the radiator takeoff face each other at the same level, so while the burner fires T2 tracks boiler flow temperature rather than tank temperature. That is real behaviour, not a display bug.
+- Tapping a probe or device opens its more-info dialog; tapping anywhere else navigates to `navigation_path`.
 
 ### Recommended dashboard setup
 
 - Create a dashboard **HVAC** (URL `dashboard-hvac`) with a single view of type **Panel** containing `custom:hvac-schematic-card`.
-- Put `custom:hvac-summary-card` on the main dashboard.
+- Put `custom:hvac-tank-card` on the main dashboard.
 
 ## Development
 
