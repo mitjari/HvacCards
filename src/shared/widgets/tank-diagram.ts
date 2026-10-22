@@ -155,7 +155,6 @@ export const tankDiagramStyles = css`
   }
   .tank-diagram .pv {
     font-size: 12px;
-    font-weight: 500;
     fill: var(--primary-text-color);
     text-anchor: middle;
   }
