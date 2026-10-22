@@ -33,6 +33,11 @@ interface Leg {
   at: number;
 }
 
+/** Tank colour where the leg connects, shared by its flowing pipe and its active chip outline. */
+function legColor(leg: Leg, view: TankDiagramView): string {
+  return temperatureColor(temperatureAt(view.probes, leg.at), view.tank);
+}
+
 /**
  * Stratified buffer tank with heat sources on a manifold to the left and loads to the right.
  * A template rather than an element so the full schematic can embed the same drawing.
@@ -85,7 +90,15 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
     const status = !d.found ? '—' : !d.active ? 'off' : d.kw != null ? `${d.kw.toFixed(1)} kW` : 'on';
     return svg`
       <g class="chip" @click=${(ev: Event) => select(ev, d.entityId)}>
-        <rect x=${x} y=${leg.chipY - 22} width=${G.CW} height="44" rx="8" class="chipbg"></rect>
+        <rect
+          x=${x}
+          y=${leg.chipY - 22}
+          width=${G.CW}
+          height="44"
+          rx="8"
+          class=${classMap({ chipbg: true, on: d.active })}
+          style=${d.active ? `stroke: ${legColor(leg, view)}` : ''}
+        ></rect>
         <text x=${x + 12} y=${leg.chipY - 4} class="cn">${d.name}</text>
         <text x=${x + 12} y=${leg.chipY + 12} class="cs">${status}</text>
       </g>
@@ -110,14 +123,14 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
           ${stops.map(([offset, probe]) => svg`<stop offset=${offset} stop-color=${temperatureColor(probe.temperature, tank)}></stop>`)}
         </linearGradient>
       </defs>
-      <rect x=${G.TX} y=${G.TY} width=${G.TW} height=${G.TH} rx="18" fill="url(#strat)"></rect>
+      <rect x=${G.TX} y=${G.TY} width=${G.TW} height=${G.TH} rx="18" fill="url(#strat)" class="water"></rect>
       ${legs.map((leg) => svg`<path class="pipe" d=${leg.route}></path>`)}
       ${legs.map(
         (leg) => svg`
           <path
             class=${classMap({ flow: true, on: leg.device.active })}
             d=${leg.route}
-            stroke=${temperatureColor(temperatureAt(probes, leg.at), tank)}
+            stroke=${legColor(leg, view)}
             style=${leg.device.kw != null ? `animation-duration: ${flowDuration(leg.device.kw)}` : ''}
           ></path>
         `,
@@ -129,17 +142,22 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
 }
 
 export const tankDiagramStyles = css`
+  /* One tint strength for every temperature colour: tank, flowing pipes and active chip outlines. */
   .tank-diagram {
+    --hvac-tint-opacity: 0.35;
     display: block;
     width: 100%;
     height: auto;
   }
-  /* No backing box, so a soft shadow keeps the value legible on any tank colour. */
+  /* A light tint rather than solid colour, so the tank sits quietly among other cards. */
+  .tank-diagram .water {
+    fill-opacity: var(--hvac-tint-opacity);
+  }
   .tank-diagram .pv {
     font-size: 12px;
-    fill: #fff;
+    font-weight: 500;
+    fill: var(--primary-text-color);
     text-anchor: middle;
-    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
   }
   .tank-diagram .cn {
     font-size: 11px;
@@ -152,6 +170,11 @@ export const tankDiagramStyles = css`
   .tank-diagram .chipbg {
     fill: var(--secondary-background-color);
     stroke: var(--divider-color);
+    transition: stroke 0.3s;
+  }
+  .tank-diagram .chipbg.on {
+    stroke-width: 2;
+    stroke-opacity: var(--hvac-tint-opacity);
   }
   .tank-diagram .chip,
   .tank-diagram .reading {
@@ -170,6 +193,7 @@ export const tankDiagramStyles = css`
     fill: none;
     stroke-dasharray: 7 9;
     stroke-linejoin: round;
+    stroke-opacity: var(--hvac-tint-opacity);
     opacity: 0;
     transition: opacity 0.3s;
   }
