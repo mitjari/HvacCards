@@ -71,31 +71,36 @@ export function temperatureAt(readings: readonly ProbeReading[], position: numbe
   return points[points.length - 1].temperature;
 }
 
-/**
- * Heat above `reference_temp` in kWh.
- * Each probe owns the slice of volume between the midpoints to its neighbours; unavailable probes are skipped, not read as zero.
- */
-export function storedHeatKwh(readings: readonly ProbeReading[], tank: ResolvedTank): number | null {
-  let kwh = 0;
-  let any = false;
-  readings.forEach((reading, i) => {
-    if (reading.temperature == null) {
-      return;
-    }
-    const lo = i === 0 ? 0 : (readings[i - 1].position + reading.position) / 2;
-    const hi = i === readings.length - 1 ? 1 : (reading.position + readings[i + 1].position) / 2;
-    kwh += (hi - lo) * tank.volume * KWH_PER_LITRE_KELVIN * Math.max(0, reading.temperature - tank.reference_temp);
-    any = true;
-  });
-  return any ? kwh : null;
-}
+/** Horizontal layers the tank is split into when integrating over height. */
+const LAYERS = 200;
 
-/** Mean of the available probes mapped onto min_temp..max_temp, as a whole percent. */
-export function chargePercent(readings: readonly ProbeReading[], tank: ResolvedTank): number | null {
-  const valid = readings.flatMap((r) => (r.temperature == null ? [] : [r.temperature]));
-  if (!valid.length) {
+/**
+ * Mean of `f` over the tank height, applied to the temperature profile from `temperatureAt`.
+ * Assumes equal volume per unit height (an upright cylinder).
+ */
+function meanOverHeight(readings: readonly ProbeReading[], f: (temperature: number) => number): number | null {
+  if (temperatureAt(readings, 0) == null) {
     return null;
   }
-  const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
-  return Math.max(0, Math.min(100, Math.round(((mean - tank.min_temp) / (tank.max_temp - tank.min_temp)) * 100)));
+  let sum = 0;
+  for (let i = 0; i < LAYERS; i++) {
+    sum += f(temperatureAt(readings, (i + 0.5) / LAYERS) as number);
+  }
+  return sum / LAYERS;
+}
+
+/** Heat above `reference_temp` in kWh; layers colder than the reference count as empty, not negative. */
+export function storedHeatKwh(readings: readonly ProbeReading[], tank: ResolvedTank): number | null {
+  const kelvin = meanOverHeight(readings, (t) => Math.max(0, t - tank.reference_temp));
+  return kelvin == null ? null : kelvin * tank.volume * KWH_PER_LITRE_KELVIN;
+}
+
+/**
+ * Usable heat as a whole percent of a tank uniformly at `max_temp`.
+ * Each layer counts only between min_temp and max_temp: water below the minimum is useless rather than a debt, and water above the maximum adds nothing.
+ */
+export function chargePercent(readings: readonly ProbeReading[], tank: ResolvedTank): number | null {
+  const span = tank.max_temp - tank.min_temp;
+  const fraction = meanOverHeight(readings, (t) => Math.max(0, Math.min(span, t - tank.min_temp)) / span);
+  return fraction == null ? null : Math.round(fraction * 100);
 }
