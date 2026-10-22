@@ -8,7 +8,6 @@ import { type ProbeReading, temperatureAt, temperatureColor } from '../model/tan
 const G = { W: 380, TX: 150, TW: 76, TY: 44, TH: 244, CW: 108, LX: 4, RX: 268, MX: 136, TOP: 22 } as const;
 
 export interface TankProbeView extends ProbeReading {
-  label: string;
   entityId: string;
 }
 
@@ -93,14 +92,13 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
     `;
   };
 
-  const pill = (probe: TankProbeView) => {
+  const reading = (probe: TankProbeView) => {
     const y = Math.max(G.TY + 12, Math.min(G.TY + G.TH - 12, G.TY + probe.position * G.TH));
     const value = probe.temperature == null ? '—' : `${Math.round(probe.temperature)} ${view.unit}`;
     return svg`
-      <g class="pill" @click=${(ev: Event) => select(ev, probe.entityId)}>
-        <rect x=${G.TX + 6} y=${y - 10} width=${G.TW - 12} height="20" rx="6" fill="rgba(15,15,15,0.5)"></rect>
-        <text x=${G.TX + 12} y=${y + 4} class="pl">${probe.label}</text>
-        <text x=${G.TX + G.TW - 12} y=${y + 4} class="pv">${value}</text>
+      <g class="reading" @click=${(ev: Event) => select(ev, probe.entityId)}>
+        <rect x=${G.TX + 6} y=${y - 10} width=${G.TW - 12} height="20" fill="transparent"></rect>
+        <text x=${midX} y=${y + 4} class="pv">${value}</text>
       </g>
     `;
   };
@@ -125,7 +123,7 @@ export function tankDiagram(view: TankDiagramView, onSelect: (entityId: string) 
         `,
       )}
       <rect x=${G.TX} y=${G.TY} width=${G.TW} height=${G.TH} rx="18" fill="none" stroke="var(--divider-color)" stroke-width="1.5"></rect>
-      ${probes.map(pill)} ${legs.map(chip)}
+      ${probes.map(reading)} ${legs.map(chip)}
     </svg>
   `;
 }
@@ -136,15 +134,12 @@ export const tankDiagramStyles = css`
     width: 100%;
     height: auto;
   }
-  .tank-diagram .pl {
-    font-size: 11px;
-    fill: #fff;
-    opacity: 0.75;
-  }
+  /* No backing box, so a soft shadow keeps the value legible on any tank colour. */
   .tank-diagram .pv {
-    font-size: 11px;
+    font-size: 12px;
     fill: #fff;
-    text-anchor: end;
+    text-anchor: middle;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
   }
   .tank-diagram .cn {
     font-size: 11px;
@@ -159,7 +154,7 @@ export const tankDiagramStyles = css`
     stroke: var(--divider-color);
   }
   .tank-diagram .chip,
-  .tank-diagram .pill {
+  .tank-diagram .reading {
     cursor: pointer;
   }
   /* Idle pipes stay grey; temperature shows on a pipe only where water moves. */

@@ -105,7 +105,7 @@ export class HvacTankCard extends LitElement implements LovelaceCard {
 
     const probes: TankProbeView[] = TANK_PROBES.map((probe, i) => {
       const entityId = resolveEntityId(config, probe.point);
-      return { label: probe.label, entityId, position: tank.probe_positions[i], temperature: numericState(usableEntity(this.hass, entityId)) };
+      return { entityId, position: tank.probe_positions[i], temperature: numericState(usableEntity(this.hass, entityId)) };
     }).sort((a, b) => a.position - b.position);
     const unit = this.hass?.states[probes[0].entityId]?.attributes.unit_of_measurement ?? '°C';
     const sources = HEAT_SOURCES.map((device) => readDevice(this.hass, config, device));
